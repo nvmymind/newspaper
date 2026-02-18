@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>신문 사설 모음</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f2f3f7;
+      --surface: #ffffff;
+      --surface-hover: #f8f9fc;
+      --border: #e2e5ec;
+      --text: #1a1d26;
+      --muted: #5c6370;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --source-color: #0ea5e9;
+      --read-badge: #059669;
+      --shadow: 0 1px 3px rgba(0,0,0,0.06);
+      --shadow-hover: 0 4px 12px rgba(37,99,235,0.15);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: "Noto Sans KR", sans-serif;
+      line-height: 1.6;
+      /* 시사·신문 사이트용 디자인 배경 이미지 (무료 사용 가능) */
+      background-color: #e8eae9;
+      background-image: url("https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1920&q=80");
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      background-repeat: no-repeat;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.75) 50%, rgba(248,249,252,0.88) 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .wrap {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+    h1 {
+      font-family: "Noto Serif KR", serif;
+      font-weight: 700;
+      font-size: 1.85rem;
+      margin: 0 0 0.5rem 0;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+    .sub {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding: 1rem 1.25rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+    }
+    .toolbar label {
+      color: var(--muted);
+      font-size: 0.85rem;
+      font-weight: 500;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+    input[type="date"], select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.95rem;
+    }
+    input[type="date"]:focus, select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+    }
+    .list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+    @media (max-width: 768px) {
+      .list { grid-template-columns: 1fr; }
+    }
+    .list.loading { grid-template-columns: 1fr; }
+    .editorial {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 1rem 1.25rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      text-decoration: none;
+      color: var(--text);
+      transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+      box-shadow: var(--shadow);
+    }
+    .editorial:hover {
+      border-color: var(--accent);
+      background: var(--surface-hover);
+      box-shadow: var(--shadow-hover);
+    }
+    .editorial .body { flex: 1; min-width: 0; }
+    .editorial .source {
+      font-size: 0.8rem;
+      color: var(--source-color);
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+      letter-spacing: 0.02em;
+    }
+    .editorial .title {
+      font-family: "Noto Serif KR", serif;
+      font-weight: 600;
+      font-size: 1rem;
+      line-height: 1.45;
+      color: var(--text);
+    }
+    .editorial .summary {
+      margin-top: 0.4rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.45;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    .editorial .read-badge {
+      flex-shrink: 0;
+      font-size: 0.75rem;
+      color: var(--read-badge);
+      font-weight: 600;
+      padding: 0.25rem 0.5rem;
+      background: rgba(5,150,105,0.1);
+      border-radius: 6px;
+    }
+    .empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+    }
+    .empty p { margin: 0 0 1rem 0; }
+    .loading { opacity: 0.8; pointer-events: none; }
+    .loading-msg {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 2.5rem 1.5rem;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.7;
+    }
+    .loading-msg .loading-title { font-weight: 600; color: var(--text); }
+    .loading-msg .loading-hint { margin-top: 0.5rem; font-size: 0.88rem; color: var(--muted); }
+    .loading-msg .loading-refresh { margin-top: 0.75rem; font-size: 0.85rem; color: var(--accent); }
+    .source-status {
+      grid-column: 1 / -1;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 0;
+      padding: 0.5rem 0;
+    }
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 0.75rem 1.25rem;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 10px;
+      font-weight: 500;
+      font-size: 0.9rem;
+      box-shadow: 0 4px 20px rgba(37,99,235,0.35);
+      z-index: 100;
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>신문 사설 모음</h1>
+    <p class="sub">날짜를 선택하면 해당 날짜의 각 신문사 사설을 실시간으로 불러옵니다. 제목을 클릭하면 기사로 이동하며, 읽은 사설은 '읽음'으로 표시됩니다.</p>
+    <p class="sub" id="scraperInfo">대상: <span id="scraperCount">-</span></p>
+
+    <div class="toolbar">
+      <div>
+        <label for="date">날짜</label>
+        <input type="date" id="date" />
+      </div>
+      <div>
+        <label for="source">신문사</label>
+        <select id="source">
+          <option value="">전체</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="list" class="list"></div>
+  </div>
+
+  <script>
+    const dateEl = document.getElementById("date");
+    const sourceEl = document.getElementById("source");
+    const listEl = document.getElementById("list");
+
+    const READ_STORAGE_KEY = "editorials_read";
+    const FETCH_TIMEOUT_MS = 300000;
+
+    function todayStr() {
+      const d = new Date();
+      return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    }
+
+    function getReadSet() {
+      try {
+        const raw = localStorage.getItem(READ_STORAGE_KEY);
+        return raw ? new Set(JSON.parse(raw)) : new Set();
+      } catch (_) {
+        return new Set();
+      }
+    }
+
+    function markRead(url) {
+      const set = getReadSet();
+      set.add(url);
+      try {
+        localStorage.setItem(READ_STORAGE_KEY, JSON.stringify([...set]));
+      } catch (_) {}
+      return set;
+    }
+
+    function fetchWithTimeout(url, options, timeoutMs) {
+      const ctrl = new AbortController();
+      const id = setTimeout(() => ctrl.abort(), timeoutMs);
+      return fetch(url, { ...options, signal: ctrl.signal }).finally(() => clearTimeout(id));
+    }
+
+    async function loadDates() {
+      try {
+        const r = await fetch("/api/dates?days=90");
+        const data = await r.json();
+        if (data.dates && data.dates.length) {
+          if (!dateEl.value) dateEl.value = todayStr();
+        } else if (!dateEl.value) {
+          dateEl.value = todayStr();
+        }
+      } catch (_) {
+        if (!dateEl.value) dateEl.value = todayStr();
+      }
+    }
+
+    async function loadSources() {
+      try {
+        const r = await fetch("/api/sources");
+        const data = await r.json();
+        const prev = sourceEl.value;
+        sourceEl.innerHTML = '<option value="">전체</option>';
+        (data.sources || []).forEach(s => {
+          const opt = document.createElement("option");
+          opt.value = s;
+          opt.textContent = s;
+          if (s === prev) opt.selected = true;
+          sourceEl.appendChild(opt);
+        });
+      } catch (_) {}
+    }
+
+    function escapeHtml(s) {
+      const div = document.createElement("div");
+      div.textContent = s;
+      return div.innerHTML;
+    }
+
+    function toast(msg, duration) {
+      duration = duration || 2500;
+      const el = document.createElement("div");
+      el.className = "toast";
+      el.innerHTML = typeof msg === "string" ? msg.replace(/\n/g, "<br>") : msg;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), duration);
+    }
+
+    async function loadEditorials() {
+      const date = dateEl.value || todayStr();
+      dateEl.value = date;
+      const source = sourceEl.value || "";
+      const params = new URLSearchParams({ date });
+      if (source) params.set("source", source);
+
+      listEl.classList.add("loading");
+      listEl.innerHTML = '<div class="loading-msg"><p class="loading-title">해당 날짜 사설을 불러오는 중…</p><p class="loading-hint">약 1분 정도 소요될 수 있습니다.</p><p class="loading-refresh">목록이 나오지 않으면 새로고침(F5) 후 날짜를 다시 선택해 주세요.</p></div>';
+
+      try {
+        const r = await fetchWithTimeout("/api/editorials?" + params.toString(), {}, FETCH_TIMEOUT_MS);
+        const data = await r.json();
+        listEl.classList.remove("loading");
+
+        if (!data.items || !data.items.length) {
+          const bySrc = data.by_source || {};
+          const errParts = Object.entries(bySrc).filter(([, v]) => v.error).map(([k, v]) => k + ": " + v.error);
+          listEl.innerHTML = `
+            <div class="empty">
+              <p>이 날짜에 수집된 사설이 없습니다.</p>
+              ${errParts.length ? "<p>" + errParts.join("<br>") + "</p>" : ""}
+              <p>다른 날짜를 선택해 보세요.</p>
+            </div>
+          `;
+          return;
+        }
+
+        const bySrc = data.by_source || {};
+        const statusParts = Object.entries(bySrc).map(([k, v]) => v.error ? (k + ": " + v.error) : (k + " " + (v.count || 0) + "건"));
+        const statusHtml = statusParts.length ? "<p class=\"source-status\">" + statusParts.join(" · ") + "</p>" : "";
+        const readSet = getReadSet();
+        listEl.innerHTML = statusHtml + data.items.map(item => {
+          const isRead = readSet.has(item.url);
+          return `
+            <a class="editorial" href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer" data-url="${escapeHtml(item.url)}">
+              <span class="body">
+                <span class="source">${escapeHtml(item.source)}</span>
+                <span class="title">${escapeHtml(item.title)}</span>
+                ${item.summary ? `<span class="summary">${escapeHtml(item.summary)}</span>` : ""}
+              </span>
+              ${isRead ? '<span class="read-badge">읽음</span>' : ""}
+            </a>
+          `;
+        }).join("");
+
+        listEl.querySelectorAll(".editorial").forEach(a => {
+          a.addEventListener("click", function () {
+            const url = this.getAttribute("data-url");
+            if (url) {
+              markRead(url);
+              const badge = this.querySelector(".read-badge");
+              if (!badge) {
+                const span = document.createElement("span");
+                span.className = "read-badge";
+                span.textContent = "읽음";
+                this.appendChild(span);
+              }
+            }
+          });
+        });
+      } catch (e) {
+        listEl.classList.remove("loading");
+        if (e && e.name === "AbortError") {
+          listEl.innerHTML = '<div class="empty"><p>불러오기 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.</p></div>';
+        } else {
+          listEl.innerHTML = '<div class="empty"><p>목록을 불러오지 못했습니다.</p></div>';
+        }
+      }
+    }
+
+    dateEl.addEventListener("change", loadEditorials);
+    sourceEl.addEventListener("change", loadEditorials);
+
+    async function loadScraperInfo() {
+      try {
+        const r = await fetch("/api/scrapers");
+        if (!r.ok) return;
+        const data = await r.json();
+        const el = document.getElementById("scraperCount");
+        if (el && data.sources && data.sources.length) {
+          el.textContent = data.sources.join(", ");
+        }
+      } catch (_) {}
+    }
+
+    loadScraperInfo();
+    loadSources();
+    loadDates().then(() => loadEditorials());
+  </script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+# 가상환경
+venv/
+.venv/
+env/
+
+# 데이터·DB (업로드하지 않음)
+data/
+*.db
+*.sqlite3
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.so
+.eggs/
+*.egg-info/
+*.egg
+
+# 환경변수
+.env
+.env.local
+.env.*.local
+
+# IDE·OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# 기타
+*.log
+.cache/

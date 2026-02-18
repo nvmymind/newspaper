@@ -1,0 +1,13 @@
+# Synology NAS Container Manager 또는 docker-compose에서 사용
+# 프로젝트 폴더에서: docker-compose up -d
+
+services:
+  newspaper:
+    build: .
+    container_name: newspaper-editorial
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      # DB·수집 데이터 유지 (NAS 재부팅해도 데이터 보존)
+      - ./data:/app/data
