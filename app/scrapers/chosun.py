@@ -1,4 +1,4 @@
-"""조선일보 사설 스크래퍼. (목록이 JS 렌더링이라 Playwright 우선, 없으면 httpx 시도)"""
+"""조선일보 사설 스크래퍼. (RSS 우선, 없으면 Playwright/httpx)"""
 import asyncio
 import re
 from typing import List
@@ -7,9 +7,11 @@ import httpx
 from bs4 import BeautifulSoup
 
 from app.models import Editorial
-from app.scrapers.base import BaseScraper, BROWSER_HEADERS
+from app.scrapers.base import BaseScraper, BROWSER_HEADERS, parse_rss_to_editorials, RSS_HEADERS
 
 EDITORIAL_LIST_URL = "https://www.chosun.com/opinion/editorial/"
+# 오피니언 RSS(사설·칼럼 포함) - 사설만 필터해 사용
+CHOSUN_OPINION_RSS = "https://www.chosun.com/arc/outboundfeeds/rss/category/opinion/?outputType=xml"
 
 
 async def _fetch_html_playwright(url: str) -> str | None:
@@ -110,10 +112,30 @@ class ChosunScraper(BaseScraper):
     max_items = 250
 
     async def fetch_editorials(self) -> List[Editorial]:
+        # 1) RSS 우선 시도 (서버에서 Playwright 미설치 시에도 동작)
+        try:
+            async with httpx.AsyncClient(
+                follow_redirects=True, headers=RSS_HEADERS, timeout=20.0
+            ) as client:
+                r = await client.get(CHOSUN_OPINION_RSS)
+                if r.status_code == 200 and r.text.strip():
+                    all_items = parse_rss_to_editorials(r.text, self.source_name)
+                    # 사설만: 제목에 [사설] 또는 URL에 /opinion/editorial/
+                    editorial_only = [
+                        e for e in all_items
+                        if "[사설]" in (e.title or "") or "/opinion/editorial/" in (e.url or "")
+                    ]
+                    if editorial_only:
+                        seen = set()
+                        unique = [e for e in editorial_only if e.url not in seen and not seen.add(e.url)]
+                        return unique[: self.max_items]
+        except Exception:
+            pass
+
+        # 2) 기존 HTML 방식 (Playwright → httpx)
         results: List[Editorial] = []
         for page in range(1, self.max_pages + 1):
             url = self.page_url(page)
-            # 조선일보 목록은 JS 렌더링이라 Playwright 우선
             html = await _fetch_html_playwright(url)
             if not html:
                 html = await _fetch_html_httpx(url)
@@ -127,7 +149,26 @@ class ChosunScraper(BaseScraper):
         return unique[: self.max_items]
 
     async def fetch_editorials_for_date(self, target_date: str) -> List[Editorial]:
-        """해당 날짜(YYYY-MM-DD) 사설만 수집. 목록이 최신순이므로 그보다 과거가 나오면 중단."""
+        """해당 날짜(YYYY-MM-DD) 사설만 수집. RSS 우선, 없으면 HTML."""
+        # RSS로 전체 수집 후 날짜 필터
+        try:
+            async with httpx.AsyncClient(
+                follow_redirects=True, headers=RSS_HEADERS, timeout=20.0
+            ) as client:
+                r = await client.get(CHOSUN_OPINION_RSS)
+                if r.status_code == 200 and r.text.strip():
+                    all_items = parse_rss_to_editorials(r.text, self.source_name)
+                    editorial_only = [
+                        e for e in all_items
+                        if ("[사설]" in (e.title or "") or "/opinion/editorial/" in (e.url or ""))
+                        and e.published_date == target_date
+                    ]
+                    if editorial_only:
+                        seen = set()
+                        return [e for e in editorial_only if e.url not in seen and not seen.add(e.url)]
+        except Exception:
+            pass
+
         results: List[Editorial] = []
         for page in range(1, self.max_pages + 1):
             url = self.page_url(page)

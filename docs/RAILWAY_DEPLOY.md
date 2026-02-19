@@ -114,6 +114,7 @@ Deploy 로그에는 "Application startup complete"가 보이는데 브라우저�
 - GitHub에 `git push` 하면 Railway가 자동으로 감지해서 **재배포**함. 별도 버튼 누를 필요 없음.
 
 **Q. 도메인을 내가 가진 주소로 쓰고 싶어요.**  
-- Settings → Networking → **Custom Domain** 에서 본인 도메인 연결 가능 (DNS 설정 필요).
+- Settings → Networking → **Custom Domain** 에서 본인 도메인 연결 가능 (DNS 설정 필요).  
+- **Cafe24 도메인**을 Railway에 연결하는 자세한 절차는 **[docs/CAFE24_DOMAIN_RAILWAY.md](CAFE24_DOMAIN_RAILWAY.md)** 를 참고하세요.
 
 이 가이드는 **newspaper** 프로젝트 기준으로 작성되었습니다. 저장소 이름이 다르면 해당 이름으로 선택하면 됩니다.

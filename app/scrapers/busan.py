@@ -13,29 +13,43 @@ LIST_URL = "https://www.busan.com/opinionmain/"
 BASE_URL = "https://www.busan.com"
 
 
+def _ancestor_contains(a, needle: str, max_depth: int = 15) -> bool:
+    """링크의 조상 중 하나에 needle 문자열이 포함돼 있는지 확인."""
+    p = a.parent
+    for _ in range(max_depth):
+        if p is None:
+            return False
+        if needle in (p.get_text() or ""):
+            return True
+        p = p.parent
+    return False
+
+
 def _parse_busan_html(html: str, source_name: str) -> List[Editorial]:
     results: List[Editorial] = []
     soup = BeautifulSoup(html, "html.parser")
-    for a in soup.select("a[href*='view.php'], a[href*='view/busan'], a[href*='code=']"):
+    # view.php?code= 형태 링크 (부산일보 기사 공통)
+    for a in soup.select("a[href*='code=']"):
         href = (a.get("href") or "").strip()
-        if not href or "javascript" in href or "code=" not in href:
+        if not href or "javascript" in href or "view.php" not in href:
             continue
         if not href.startswith("http"):
             href = BASE_URL + href if href.startswith("/") else BASE_URL + "/" + href
         href = href.split("#")[0]
-        m = re.search(r"code=(\d{8})\d*", href)
+        m = re.search(r"code=(\d{8})", href)
         if not m:
             continue
         date = f"{m.group(1)[:4]}-{m.group(1)[4:6]}-{m.group(1)[6:8]}"
         title_el = a.select_one("h2, h3, h4, .tit, .title, [class*='title'], [class*='headline']") or a
         title = (title_el.get_text(strip=True) or "").strip()
-        if not title or len(title) < 5:
+        if len(title) > 200:
+            title = title[:197] + "..."
+        if not title or len(title) < 2:
             continue
-        if "[사설]" not in title:
-            parent = a.find_parent(["article", "li", "div", "section", "p"])
-            if not parent or "[사설]" not in (parent.get_text() or ""):
-                continue
-        if not title.startswith("[사설]"):
+        # 사설만: 제목 또는 위쪽 조상에 '사설' 포함 (섹션 제목·블록 텍스트 포함)
+        if "사설" not in title and not _ancestor_contains(a, "사설"):
+            continue
+        if not title.startswith("[사설]") and "[사설]" not in title:
             title = "[사설] " + title
         results.append(
             Editorial(
