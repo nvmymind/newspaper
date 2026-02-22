@@ -211,14 +211,14 @@
   <div class="wrap">
     <h1>신문 사설 모음</h1>
     <p class="sub">날짜를 선택하면 해당 날짜의 각 신문사 사설을 실시간으로 불러옵니다. 제목을 클릭하면 기사로 이동하며, 읽은 사설은 '읽음'으로 표시됩니다.</p>
-    <p class="sub" id="scraperInfo">대상: <span id="scraperCount">-</span></p>
+    <p class="sub" id="scraperInfo" style="display: none;">대상: <span id="scraperCount">-</span></p>
 
     <div class="toolbar">
       <div>
         <label for="date">날짜</label>
         <input type="date" id="date" />
       </div>
-      <div>
+      <div id="sourceWrap" style="display: none;">
         <label for="source">신문사</label>
         <select id="source">
           <option value="">전체</option>
@@ -284,9 +284,14 @@
       try {
         const r = await fetch("/api/sources");
         const data = await r.json();
+        const sources = data.sources || [];
+        const sourceWrap = document.getElementById("sourceWrap");
+        if (sourceWrap) {
+          sourceWrap.style.display = sources.length > 1 ? "" : "none";
+        }
         const prev = sourceEl.value;
         sourceEl.innerHTML = '<option value="">전체</option>';
-        (data.sources || []).forEach(s => {
+        sources.filter(s => s !== "네이버 오피니언").forEach(s => {
           const opt = document.createElement("option");
           opt.value = s;
           opt.textContent = s;
@@ -340,7 +345,11 @@
         }
 
         const bySrc = data.by_source || {};
-        const statusParts = Object.entries(bySrc).map(([k, v]) => v.error ? (k + ": " + v.error) : (k + " " + (v.count || 0) + "건"));
+        const statusParts = Object.entries(bySrc).map(([k, v]) => {
+          if (v.error) return k + ": " + v.error;
+          if (k === "네이버 오피니언") return "총 " + (v.count || 0) + "건";
+          return k + " " + (v.count || 0) + "건";
+        });
         const statusHtml = statusParts.length ? "<p class=\"source-status\">" + statusParts.join(" · ") + "</p>" : "";
         const readSet = getReadSet();
         listEl.innerHTML = statusHtml + data.items.map(item => {
@@ -390,9 +399,16 @@
         const r = await fetch("/api/scrapers");
         if (!r.ok) return;
         const data = await r.json();
-        const el = document.getElementById("scraperCount");
-        if (el && data.sources && data.sources.length) {
-          el.textContent = data.sources.join(", ");
+        const sources = data.sources || [];
+        const infoEl = document.getElementById("scraperInfo");
+        if (infoEl) {
+          if (sources.length > 1 || (sources.length === 1 && sources[0] !== "네이버 오피니언")) {
+            const el = document.getElementById("scraperCount");
+            if (el) el.textContent = sources.join(", ");
+            infoEl.style.display = "";
+          } else {
+            infoEl.style.display = "none";
+          }
         }
       } catch (_) {}
     }
