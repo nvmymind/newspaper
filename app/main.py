@@ -70,13 +70,52 @@ async def health():
     return {"status": "ok"}
 
 
+@app.get("/api/site-verification-status")
+async def site_verification_status():
+    """Search Console용 meta 태그가 head에 넣어질 값이 있는지 확인. set: true면 정상."""
+    content = _google_site_verification_content()
+    return {"set": bool(content)}
+
+
+def _google_site_verification_content() -> str:
+    """GOOGLE_SITE_VERIFICATION에서 content 값만 추출. meta 태그 전체를 넣어도 동작."""
+    raw = (os.environ.get("GOOGLE_SITE_VERIFICATION") or "").strip()
+    if not raw:
+        return ""
+    # content="...값..." 또는 content='...값...' 형태에서 값만 추출
+    for prefix, q in [('content="', '"'), ("content='", "'")]:
+        if prefix in raw:
+            start = raw.find(prefix) + len(prefix)
+            end = raw.find(q, start)
+            if end != -1:
+                return raw[start:end].strip()
+    # 이미 content 값만 있는 경우(영문·숫자 조합) 그대로 사용
+    return raw
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     try:
-        return templates.TemplateResponse("index.html", {"request": request})
+        google_site_verification = _google_site_verification_content()
+        return templates.TemplateResponse(
+            "index.html",
+            {"request": request, "google_site_verification": google_site_verification},
+        )
     except Exception as e:
         print(f"[오류] 메인 페이지: {e!r}")
         return PlainTextResponse("메인 페이지를 불러오지 못했습니다. 새로고침해 주세요.", status_code=500)
+
+
+@app.get("/privacy", response_class=HTMLResponse)
+async def privacy_page(request: Request):
+    """개인정보처리방침 (Google OAuth 동의 화면·검증용 URL)."""
+    return templates.TemplateResponse("privacy.html", {"request": request})
+
+
+@app.get("/terms", response_class=HTMLResponse)
+async def terms_page(request: Request):
+    """서비스 약관 (Google OAuth 동의 화면·검증용 URL)."""
+    return templates.TemplateResponse("terms.html", {"request": request})
 
 
 def _scraper_source_names():
@@ -166,20 +205,38 @@ def _google_configured() -> bool:
     return bool(v)
 
 
-def _base_url_for_oauth(request: Request) -> str:
+def _base_url_for_oauth(request: Request, _debug: dict | None = None) -> str:
     """OAuth 리디렉션 URI용 기준 URL. 프로덕션(실제 도메인)이면 항상 https 사용."""
     base = (os.environ.get("OAUTH_BASE_URL") or "").strip()
     if base:
+        if _debug is not None:
+            _debug["base_출처"] = "OAUTH_BASE_URL"
         return base.rstrip("/")
+    # 프록시가 넘긴 원본 호스트 우선, 없으면 요청 URL의 host
     host = (request.headers.get("x-forwarded-host") or request.headers.get("host") or "").split(",")[0].strip()
     if not host:
+        try:
+            host = (getattr(request.url, "hostname", None) or "").strip()
+        except Exception:
+            pass
+    if _debug is not None:
+        _debug["감지된_host"] = host or "(없음)"
+    if not host:
+        if _debug is not None:
+            _debug["base_출처"] = "request.base_url"
         return str(request.base_url).rstrip("/")
-    # localhost/127.0.0.1 이 아니면 프로덕션으로 보고 https 고정 (Railway 등에서 http로 넘어오는 경우 대비)
+    # localhost/127.0.0.1 이 아니면 프로덕션으로 보고 https 고정
     if host.lower() not in ("localhost", "127.0.0.1") and "127.0.0.1" not in host:
+        if _debug is not None:
+            _debug["base_출처"] = "프로덕션(https 고정)"
         return f"https://{host}"
     proto = request.headers.get("x-forwarded-proto", "").strip().lower()
     if proto == "https":
+        if _debug is not None:
+            _debug["base_출처"] = "x-forwarded-proto"
         return f"https://{host}"
+    if _debug is not None:
+        _debug["base_출처"] = "request.base_url"
     return str(request.base_url).rstrip("/")
 
 
@@ -227,11 +284,13 @@ async def api_youtube_config():
 @app.get("/api/youtube/debug")
 async def api_youtube_debug(request: Request):
     """구글 로그인 원인 확인용. 브라우저에서 같은 포트로 열어보세요."""
-    base = _base_url_for_oauth(request)
+    debug_info: dict = {}
+    base = _base_url_for_oauth(request, _debug=debug_info)
     redirect_uri = f"{base}/auth/google/callback"
     return {
         "configured": _google_configured(),
         "redirect_uri_등록할값": redirect_uri,
+        **debug_info,
         "설명": "configured가 true인데 로그인 안 되면, 위 redirect_uri_등록할값을 Google 콘솔 승인된 리디렉션 URI에 정확히 넣었는지 확인하세요.",
     }
 
