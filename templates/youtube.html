@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>유튜브 구독 영상</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0f0f0f;
+      --surface: #1a1a1a;
+      --surface-hover: #272727;
+      --border: #3f3f3f;
+      --text: #f1f1f1;
+      --muted: #aaa;
+      --accent: #ff0000;
+      --accent-hover: #cc0000;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Noto Sans KR", sans-serif;
+      line-height: 1.5;
+    }
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+    .config-msg {
+      padding: 0.75rem 1rem;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin: 0 0 0.5rem 0;
+      font-weight: 600;
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+    .btn {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 500;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      transition: background 0.2s, color 0.2s;
+    }
+    .btn-google {
+      background: #4285f4;
+      color: #fff;
+    }
+    .btn-google:hover {
+      background: #3367d6;
+    }
+    .btn-logout {
+      background: var(--surface-hover);
+      color: var(--muted);
+    }
+    .btn-logout:hover {
+      background: var(--border);
+      color: var(--text);
+    }
+    .sort-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .sort-bar select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.35rem 0.6rem;
+      border-radius: 6px;
+      font-family: inherit;
+    }
+    .login-msg {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--muted);
+    }
+    .login-msg p { margin: 0 0 1rem 0; }
+    .video-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+    .video-card {
+      background: var(--surface);
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .video-card:hover {
+      background: var(--surface-hover);
+      border-color: var(--muted);
+    }
+    .video-card a {
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+    .video-card .thumb {
+      aspect-ratio: 16/9;
+      background: #333;
+      position: relative;
+      overflow: hidden;
+    }
+    .video-card .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .video-card .body {
+      padding: 0.75rem;
+    }
+    .video-card .channel {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+    }
+    .video-card .title {
+      font-size: 0.95rem;
+      font-weight: 500;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .video-card .date {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 0.35rem;
+    }
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      color: var(--muted);
+    }
+    .error-msg {
+      color: #f87171;
+      padding: 1rem;
+      background: rgba(248,113,113,0.1);
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+    .channel-list {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+    .channel-list span {
+      margin-right: 0.5rem;
+    }
+    .empty-feed {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 2rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>유튜브 구독 영상</h1>
+    <div id="authError" class="error-msg" style="display: none;"></div>
+    <div id="configMsg" class="config-msg" style="display: none;"></div>
+    <div class="toolbar" id="toolbar">
+      <a href="/auth/google" class="btn btn-google" id="btnLogin">Google로 로그인</a>
+      <a href="/api/youtube/logout" class="btn btn-logout" id="btnLogout" style="display: none;">로그아웃</a>
+    </div>
+    <div id="content">
+      <div class="login-msg" id="loginMsg">
+        Google 계정으로 로그인하면 구독 중인 채널의 최신 영상을 볼 수 있습니다.
+      </div>
+      <div id="feed" style="display: none;">
+        <div class="sort-bar">
+          <label for="sortOrder">정렬:</label>
+          <select id="sortOrder">
+            <option value="newest">최신순</option>
+            <option value="oldest">오래된순</option>
+          </select>
+        </div>
+        <div class="channel-list" id="channelList"></div>
+        <div class="video-grid" id="videoGrid"></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const btnLogin = document.getElementById("btnLogin");
+    const btnLogout = document.getElementById("btnLogout");
+    const loginMsg = document.getElementById("loginMsg");
+    const feed = document.getElementById("feed");
+    const channelList = document.getElementById("channelList");
+    const videoGrid = document.getElementById("videoGrid");
+    const sortOrder = document.getElementById("sortOrder");
+
+    function formatDate(iso) {
+      if (!iso) return "";
+      const d = new Date(iso);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      const h = String(d.getHours()).padStart(2, "0");
+      const min = String(d.getMinutes()).padStart(2, "0");
+      return y + "-" + m + "-" + day + " " + h + ":" + min;
+    }
+
+    function thumbUrl(thumbnails) {
+      if (!thumbnails) return "";
+      return thumbnails.medium?.url || thumbnails.default?.url || "";
+    }
+
+    function escapeHtml(s) {
+      const div = document.createElement("div");
+      div.textContent = s;
+      return div.innerHTML;
+    }
+
+    function renderVideos(videos, order) {
+      const list = order === "oldest" ? [...videos].reverse() : [...videos];
+      videoGrid.innerHTML = list.map(v => {
+        const url = "https://www.youtube.com/watch?v=" + (v.video_id || "");
+        const thumb = thumbUrl(v.thumbnails);
+        const dateStr = formatDate(v.published_at);
+        return `
+          <div class="video-card">
+            <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">
+              <div class="thumb">
+                ${thumb ? `<img src="${escapeHtml(thumb)}" alt="" loading="lazy" />` : ""}
+              </div>
+              <div class="body">
+                <div class="channel">${escapeHtml(v.channel_title || "")}</div>
+                <div class="title">${escapeHtml(v.title || "")}</div>
+                <div class="date">${escapeHtml(dateStr)}</div>
+              </div>
+            </a>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function loadFeed() {
+      feed.style.display = "none";
+      loginMsg.style.display = "block";
+      const configMsgEl = document.getElementById("configMsg");
+      try {
+        const r = await fetch("/api/youtube/feed");
+        const data = await r.json();
+        if (!data.logged_in) {
+          btnLogout.style.display = "none";
+          btnLogin.style.display = "";
+          return;
+        }
+        btnLogin.style.display = "none";
+        btnLogout.style.display = "";
+        loginMsg.style.display = "none";
+        if (configMsgEl) configMsgEl.style.display = "none";
+        feed.style.display = "block";
+
+        const channels = data.channels || [];
+        const videos = data.videos || [];
+        const err = data.error || "";
+        channelList.innerHTML = "구독 채널 " + channels.length + "개 · 영상 " + videos.length + "개" + (err ? " · " + err : "");
+        if (videos.length === 0 && err) {
+          videoGrid.innerHTML = '<div class="empty-feed">피드를 불러오는 중 오류가 났습니다. 잠시 후 다시 시도해 주세요.</div>';
+        } else {
+          renderVideos(videos, sortOrder.value);
+          sortOrder.onchange = () => renderVideos(videos, sortOrder.value);
+        }
+      } catch (e) {
+        loginMsg.innerHTML = "<p>피드를 불러오지 못했습니다.</p>";
+        loginMsg.style.display = "block";
+      }
+    }
+
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const err = params.get("error");
+      const authErrorEl = document.getElementById("authError");
+      const configMsgEl = document.getElementById("configMsg");
+      if (authErrorEl && err === "login_failed") {
+        var redirectUri = window.location.origin + "/auth/google/callback";
+        authErrorEl.textContent = "로그인에 실패했습니다. Google 콘솔 '승인된 리디렉션 URI'에 다음 주소가 정확히 등록돼 있는지 확인하세요: " + redirectUri;
+        authErrorEl.style.display = "block";
+      } else if (configMsgEl && err === "config") {
+        if (authErrorEl) authErrorEl.style.display = "none";
+        var redirectUri = window.location.origin + "/auth/google/callback";
+        configMsgEl.textContent = "Google 로그인이 설정되지 않았습니다. .env에 GOOGLE_CLIENT_ID·GOOGLE_CLIENT_SECRET을 넣고, Google 콘솔에 리디렉션 URI(" + redirectUri + ")를 등록한 뒤 서버를 재시작하세요.";
+        configMsgEl.style.display = "block";
+      }
+    })();
+    loadFeed();
+  </script>
+</body>
+</html>

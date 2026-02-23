@@ -219,8 +219,15 @@ class NaverOpinionScraper(BaseScraper):
         items: List[Editorial] = []
         seen_urls: Set[str] = set()
 
-        # 1) Playwright로 사설 탭 전체 로드 시도 (네이버에 보이는 것과 동일한 목록)
-        html = await _fetch_full_editorial_with_playwright(url_editorial)
+        # 1) Playwright로 사설 탭 전체 로드 시도 (실패/타임아웃 시 바로 httpx로 넘어감)
+        html = None
+        try:
+            html = await asyncio.wait_for(
+                _fetch_full_editorial_with_playwright(url_editorial),
+                timeout=18.0,
+            )
+        except (asyncio.TimeoutError, Exception):
+            pass
         if html:
             items = _parse_editorial_page_html(html, date)
             seen_urls = {e.url for e in items}
