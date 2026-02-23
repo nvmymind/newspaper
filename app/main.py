@@ -166,6 +166,23 @@ def _google_configured() -> bool:
     return bool(v)
 
 
+def _base_url_for_oauth(request: Request) -> str:
+    """OAuth 리디렉션 URI용 기준 URL. 프로덕션(실제 도메인)이면 항상 https 사용."""
+    base = (os.environ.get("OAUTH_BASE_URL") or "").strip()
+    if base:
+        return base.rstrip("/")
+    host = (request.headers.get("x-forwarded-host") or request.headers.get("host") or "").split(",")[0].strip()
+    if not host:
+        return str(request.base_url).rstrip("/")
+    # localhost/127.0.0.1 이 아니면 프로덕션으로 보고 https 고정 (Railway 등에서 http로 넘어오는 경우 대비)
+    if host.lower() not in ("localhost", "127.0.0.1") and "127.0.0.1" not in host:
+        return f"https://{host}"
+    proto = request.headers.get("x-forwarded-proto", "").strip().lower()
+    if proto == "https":
+        return f"https://{host}"
+    return str(request.base_url).rstrip("/")
+
+
 @app.get("/auth/google")
 async def auth_google(request: Request):
     """Google 로그인 페이지로 리다이렉트."""
@@ -173,7 +190,7 @@ async def auth_google(request: Request):
         if not _google_configured():
             print("[유튜브] /auth/google: GOOGLE_CLIENT_ID가 비어 있음 → /youtube?error=config")
             return RedirectResponse(url="/youtube?error=config", status_code=302)
-        base = str(request.base_url).rstrip("/")
+        base = _base_url_for_oauth(request)
         redirect_uri = f"{base}/auth/google/callback"
         url = get_google_oauth_url(redirect_uri=redirect_uri)
         return RedirectResponse(url=url)
@@ -189,7 +206,7 @@ async def auth_google_callback(request: Request, code: str | None = None):
     try:
         if not code:
             return RedirectResponse(url=youtube_url, status_code=302)
-        base = str(request.base_url).rstrip("/")
+        base = _base_url_for_oauth(request)
         redirect_uri = f"{base}/auth/google/callback"
         tokens = await exchange_code_for_tokens(code, redirect_uri)
         if not tokens:
@@ -210,7 +227,7 @@ async def api_youtube_config():
 @app.get("/api/youtube/debug")
 async def api_youtube_debug(request: Request):
     """구글 로그인 원인 확인용. 브라우저에서 같은 포트로 열어보세요."""
-    base = str(request.base_url).rstrip("/")
+    base = _base_url_for_oauth(request)
     redirect_uri = f"{base}/auth/google/callback"
     return {
         "configured": _google_configured(),

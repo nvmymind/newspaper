@@ -113,3 +113,39 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
   - `http` vs `https`, 포트 번호, 끝의 `/` 유무까지 동일해야 함.
 - **토큰 교환 실패**  
   서버 터미널에 `[유튜브] Google 토큰 교환 실패 ...` 로그가 나오면, 그 내용을 확인해 리디렉션 URI·클라이언트 비밀을 다시 점검하면 됩니다.
+
+---
+
+## Railway 배포 시 (www.soneson.kr 등)
+
+1. **환경 변수는 "웹 서비스"에 넣어야 합니다**  
+   - Railway 프로젝트에서 **실제 웹 앱이 돌아가는 서비스(카드)** 를 클릭  
+   - **Variables** 탭으로 이동  
+   - 여기에 아래 **네 개**를 **정확한 이름**으로 추가:
+     - `GOOGLE_CLIENT_ID` = (Google 콘솔에서 복사한 클라이언트 ID)
+     - `GOOGLE_CLIENT_SECRET` = (클라이언트 보안 비밀)
+     - `SECRET_KEY` = (32자 이상 아무 문자열)
+     - `OAUTH_BASE_URL` = **`https://www.soneson.kr`** (끝에 `/` 없이, 본인 도메인에 맞게 수정)  
+       → 이 값을 넣으면 로그인 시 리디렉션 URI가 항상 **https**로 고정되어 `redirect_uri_mismatch` 를 방지합니다.
+   - **다른 서비스나 프로젝트 전체 Variables가 아니라, 이 웹 서비스의 Variables**에 넣어야 앱이 읽습니다.
+
+2. **저장 후 반드시 재배포**  
+   - Variables 저장만 하면 기존 컨테이너에는 적용되지 않을 수 있음  
+   - **Deployments** 탭 → 최신 배포 **⋯** → **Redeploy** 실행
+
+3. **프로덕션 리디렉션 URI는 https**  
+   - 배포된 사이트(예: https://www.soneson.kr)에서는 리디렉션 URI가 **https**로 사용됩니다.  
+   - Google 콘솔 **승인된 리디렉션 URI**에 다음을 추가하세요 (본인 도메인에 맞게 수정):
+     ```text
+     https://www.soneson.kr/auth/google/callback
+     ```
+   - 디버그 페이지 `https://www.soneson.kr/api/youtube/debug` 에서 **redirect_uri_등록할값**을 확인해 그 값을 Google 콘솔에 그대로 등록하면 됩니다.
+
+4. **configured: false 가 나오는 경우**  
+   - `/api/youtube/debug` 에서 `"configured": false` 이면 앱이 `GOOGLE_CLIENT_ID`를 못 읽는 상태입니다.  
+   - 위 1~2번을 다시 확인: **해당 웹 서비스**의 **Variables**에 변수 추가 후 **Redeploy** 했는지 확인하세요.
+
+5. **"400 redirect_uri_mismatch" 가 나오는 경우**  
+   - Railway **Variables**에 `OAUTH_BASE_URL=https://www.soneson.kr` (본인 도메인)을 넣고 **Redeploy** 한 뒤,  
+     `https://www.soneson.kr/api/youtube/debug` 에서 **redirect_uri_등록할값**을 확인합니다.  
+   - Google 콘솔 **승인된 리디렉션 URI**에 그 값(`https://www.soneson.kr/auth/google/callback`)을 **한 글자도 틀리지 않게** 추가하고 저장하세요.
