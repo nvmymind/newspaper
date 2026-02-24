@@ -1,6 +1,7 @@
 """FastAPI 앱: 사설 수집·조회 API 및 웹 페이지."""
 import asyncio
 import os
+import re
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -97,10 +98,22 @@ def _google_site_verification_content() -> str:
 async def index(request: Request):
     try:
         google_site_verification = _google_site_verification_content()
-        return templates.TemplateResponse(
-            "index.html",
-            {"request": request, "google_site_verification": google_site_verification},
+        # 템플릿 변수와 무관하게, 값이 있으면 렌더된 HTML에 meta 태그 직접 삽입 (Search Console 인식 보장)
+        template = templates.env.get_template("index.html")
+        body = template.render(
+            {"request": request, "google_site_verification": google_site_verification}
         )
+        if google_site_verification:
+            meta = (
+                f'<meta name="google-site-verification" content="{google_site_verification}" />\n  '
+            )
+            # </head> 바로 앞에 삽입 (viewport 문자열 차이에 영향받지 않음)
+            if "</head>" in body:
+                body = body.replace("</head>", meta + "</head>", 1)
+            else:
+                # </head>가 없으면 <head> 다음에라도 넣기 (대소문자·공백 차이 대비)
+                body = re.sub(r"<head[^>]*>", "\\g<0>\\n  " + meta, body, count=1)
+        return HTMLResponse(body)
     except Exception as e:
         print(f"[오류] 메인 페이지: {e!r}")
         return PlainTextResponse("메인 페이지를 불러오지 못했습니다. 새로고침해 주세요.", status_code=500)
