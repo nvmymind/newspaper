@@ -58,6 +58,43 @@ async def global_exception_handler(request: Request, exc: Exception):
 SECRET_KEY = os.environ.get("SECRET_KEY", "change-me-in-production-use-env")
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, max_age=14 * 24 * 3600)
 
+
+async def _inject_google_site_verification_middleware(request: Request, call_next):
+    """메인(/) HTML 응답에 google-site-verification meta 삽입. 라우트 이후 실행되어 확실히 반영."""
+    response = await call_next(request)
+    if request.url.path != "/" or request.method != "GET":
+        return response
+    content_type = response.headers.get("content-type", "")
+    if "text/html" not in content_type:
+        return response
+    try:
+        body_bytes = b""
+        async for chunk in response.body_iterator:
+            body_bytes += chunk
+        body = body_bytes.decode("utf-8", errors="replace")
+    except Exception:
+        return response
+    content = _google_site_verification_content()
+    injected = False
+    if content and "google-site-verification" not in body:
+        meta = f'<meta name="google-site-verification" content="{content}" />'
+        before = body
+        body = re.sub(r"\s*</head>\s*", "\n  " + meta + "\n</head>", body, count=1)
+        if body != before:
+            injected = True
+        elif "<head" in body:
+            body = re.sub(r"(<head[^>]*>)", r"\1\n  " + meta + "\n  ", body, count=1)
+            injected = True
+    new_response = HTMLResponse(body)
+    for k, v in response.headers.items():
+        if k.lower() not in ("content-length", "content-encoding"):
+            new_response.headers[k] = v
+    new_response.headers["X-Google-Site-Verification-Injected"] = "true" if injected else "false"
+    return new_response
+
+
+app.middleware("http")(_inject_google_site_verification_middleware)
+
 # 정적 파일 및 템플릿 (프로젝트 루트 기준)
 static_dir = BASE_DIR / "static"
 if static_dir.is_dir():
@@ -76,6 +113,23 @@ async def site_verification_status():
     """Search Console용 meta 태그가 head에 넣어질 값이 있는지 확인. set: true면 정상."""
     content = _google_site_verification_content()
     return {"set": bool(content)}
+
+
+@app.get("/api/debug-ga-gtm")
+async def debug_ga_gtm():
+    """GA/GTM 환경 변수가 앱에서 보이는지 확인. HTML에 코드가 없을 때 원인 파악용."""
+    ctx = _ga_gtm_context()
+    return {
+        "ga_measurement_id_set": bool(ctx.get("ga_measurement_id")),
+        "gtm_id_set": bool(ctx.get("gtm_id")),
+    }
+
+
+def _ga_gtm_context() -> dict:
+    """Google Analytics·태그 관리자용 ID (환경 변수). 템플릿에 넘길 때 사용."""
+    ga = (os.environ.get("GA_MEASUREMENT_ID") or "").strip()
+    gtm = (os.environ.get("GTM_ID") or "").strip()
+    return {"ga_measurement_id": ga or None, "gtm_id": gtm or None}
 
 
 def _google_site_verification_content() -> str:
@@ -98,22 +152,39 @@ def _google_site_verification_content() -> str:
 async def index(request: Request):
     try:
         google_site_verification = _google_site_verification_content()
-        # 템플릿 변수와 무관하게, 값이 있으면 렌더된 HTML에 meta 태그 직접 삽입 (Search Console 인식 보장)
-        template = templates.env.get_template("index.html")
-        body = template.render(
-            {"request": request, "google_site_verification": google_site_verification}
-        )
-        if google_site_verification:
-            meta = (
-                f'<meta name="google-site-verification" content="{google_site_verification}" />\n  '
+        # Jinja2 환경에서 템플릿 렌더 (env 없으면 TemplateResponse로 대체)
+        try:
+            template = templates.env.get_template("index.html")
+            body = template.render(
+                {
+                    "request": request,
+                    "google_site_verification": google_site_verification,
+                    **_ga_gtm_context(),
+                }
             )
-            # </head> 바로 앞에 삽입 (viewport 문자열 차이에 영향받지 않음)
-            if "</head>" in body:
-                body = body.replace("</head>", meta + "</head>", 1)
-            else:
-                # </head>가 없으면 <head> 다음에라도 넣기 (대소문자·공백 차이 대비)
-                body = re.sub(r"<head[^>]*>", "\\g<0>\\n  " + meta, body, count=1)
-        return HTMLResponse(body)
+        except AttributeError:
+            resp = templates.TemplateResponse(
+                "index.html",
+                {"request": request, "google_site_verification": google_site_verification, **_ga_gtm_context()},
+            )
+            return resp
+
+        injected = False
+        if google_site_verification:
+            meta = f'<meta name="google-site-verification" content="{google_site_verification}" />'
+            # 줄바꿈 차이(CRLF/LF) 무시하고 </head> 앞에 삽입
+            before = body
+            body = re.sub(r"\s*</head>\s*", "\n  " + meta + "\n</head>", body, count=1)
+            if body != before:
+                injected = True
+            elif "<head" in body:
+                body = re.sub(r"(<head[^>]*>)", r"\1\n  " + meta + "\n  ", body, count=1)
+                injected = True
+
+        response = HTMLResponse(body)
+        if google_site_verification:
+            response.headers["X-Google-Site-Verification-Injected"] = "true" if injected else "false"
+        return response
     except Exception as e:
         print(f"[오류] 메인 페이지: {e!r}")
         return PlainTextResponse("메인 페이지를 불러오지 못했습니다. 새로고침해 주세요.", status_code=500)
@@ -122,13 +193,13 @@ async def index(request: Request):
 @app.get("/privacy", response_class=HTMLResponse)
 async def privacy_page(request: Request):
     """개인정보처리방침 (Google OAuth 동의 화면·검증용 URL)."""
-    return templates.TemplateResponse("privacy.html", {"request": request})
+    return templates.TemplateResponse("privacy.html", {"request": request, **_ga_gtm_context()})
 
 
 @app.get("/terms", response_class=HTMLResponse)
 async def terms_page(request: Request):
     """서비스 약관 (Google OAuth 동의 화면·검증용 URL)."""
-    return templates.TemplateResponse("terms.html", {"request": request})
+    return templates.TemplateResponse("terms.html", {"request": request, **_ga_gtm_context()})
 
 
 def _scraper_source_names():

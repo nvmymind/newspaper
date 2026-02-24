@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="soneson.kr 개인정보처리방침. Google 로그인 및 유튜브 구독 영상 기능 관련 개인정보 수집·이용·보관에 관한 안내입니다." />
+  <title>개인정보처리방침 - soneson.kr</title>
+  {% if gtm_id %}
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s);j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','{{ gtm_id }}');</script>
+  {% endif %}
+  {% if ga_measurement_id %}
+  <script async src="https://www.googletagmanager.com/gtag/js?id={{ ga_measurement_id }}"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','{{ ga_measurement_id }}');</script>
+  {% endif %}
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 2rem; max-width: 720px; margin-left: auto; margin-right: auto; font-family: sans-serif; line-height: 1.7; color: #333; }
+    h1 { font-size: 1.5rem; margin-top: 0; }
+    h2 { font-size: 1.1rem; margin-top: 1.5rem; }
+    p { margin: 0.5rem 0; }
+    a { color: #2563eb; }
+    .back { margin-top: 2rem; }
+  </style>
+</head>
+<body>
+  {% if gtm_id %}
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ gtm_id }}" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  {% endif %}
+  <h1>개인정보처리방침</h1>
+  <p>본 서비스(soneson.kr)는 이용자의 개인정보를 소중히 합니다.</p>
+
+  <h2>1. 수집·이용 목적</h2>
+  <p>Google 로그인(유튜브 구독 영상 기능) 시 Google에서 제공하는 계정 정보(이메일, 프로필, YouTube 구독 목록·재생 목록 접근 권한)는 해당 기능 제공 및 로그인 유지 목적으로만 이용합니다. 신문 사설 수집·조회 기능은 개인정보를 수집하지 않습니다.</p>
+
+  <h2>2. 보관·파기</h2>
+  <p>Google 로그인 정보(토큰 등)는 서버 세션에만 저장되며, 이용자가 로그아웃하거나 일정 기간 미사용 시 삭제됩니다. 별도 DB에 개인정보를 장기 보관하지 않습니다.</p>
+
+  <h2>3. 제3자 제공</h2>
+  <p>수집한 개인정보를 제3자에게 판매·제공하지 않습니다. Google API 이용 시 Google 정책이 적용됩니다.</p>
+
+  <h2>4. 문의</h2>
+  <p>개인정보 처리와 관련한 문의는 앱 개발자(nvmymind@gmail.com)로 연락해 주세요.</p>
+
+  <p class="back"><a href="/">← 메인으로</a></p>
+</body>
+</html>

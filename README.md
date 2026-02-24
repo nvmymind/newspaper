@@ -51,7 +51,13 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 - Google OAuth를 쓰려면 **Google Cloud Console**에서 OAuth 2.0 클라이언트 ID(웹 애플리케이션)를 만들고, 승인된 리디렉션 URI에 `http://127.0.0.1:8000/auth/google/callback`(로컬) 또는 배포 도메인 기준 `/auth/google/callback`을 추가합니다.
 - 프로젝트 루트에 `.env` 파일을 만들고 `.env.example`을 참고해 `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `SECRET_KEY`를 넣습니다. 이 값들이 없으면 유튜브 구독 영상 페이지만 로그인 버튼이 보이고, 사설 기능은 그대로 동작합니다.
 
-### 5. 사설 조회
+### 5. (선택) Google Analytics / 태그 관리자
+
+- **Google Analytics 4**: Railway 또는 `.env`에 `GA_MEASUREMENT_ID` = 측정 ID(예: `G-XXXXXXXXXX`)를 넣으면 메인·개인정보처리방침·서비스 약관 페이지에 GA4 스크립트가 자동으로 들어갑니다.
+- **Google Tag Manager**: `GTM_ID` = 컨테이너 ID(예: `GTM-XXXXXXX`)를 넣으면 GTM 스크립트가 같은 페이지들에 들어갑니다. GA4는 GTM 안에서 설정해도 됩니다.
+- **Railway에서 HTML에 코드가 안 나올 때**: Variables는 **웹 서비스(newspaper 카드)의 Variables 탭**에 넣고, **저장 후 Deployments → 최신 배포 ⋯ → Redeploy**를 한 번 실행하세요. 변수 추가만 하고 재배포하지 않으면 적용되지 않을 수 있습니다. 배포 후 Public URL에서 `/api/debug-ga-gtm` 이 `ga_measurement_id_set: true`, `gtm_id_set: true` 를 반환하면 정상입니다.
+
+### 6. 사설 조회
 
 - 날짜를 선택하면 **해당 날짜**의 사설을 네이버 오피니언 사설 코너에서 불러옵니다.
 - **과거 날짜**도 선택하면 그날 수록된 사설 목록을 조회할 수 있습니다.
