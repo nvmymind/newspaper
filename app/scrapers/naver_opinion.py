@@ -19,13 +19,29 @@ NAVER_LIST_URL = "https://news.naver.com/main/list.naver"
 TIME_SUFFIX_RE = re.compile(r"\s*\d+(시간|분|일)전\s*$")
 EDITORIAL_MARKERS = ("[사설]", "[논설실의 관점]")
 
+# 네이버 뉴스 언론사 oid → 신문사명 (list.naver 수집 시 '기타' 방지용). officeList.naver 기준 보강.
 NAVER_OID_NAMES = {
     "001": "연합뉴스", "002": "프레시안", "003": "뉴시스", "005": "국민일보",
-    "009": "매일경제", "011": "서울경제", "014": "파이낸셜뉴스", "015": "한국경제",
-    "016": "헤럴드경제", "020": "동아일보", "021": "문화일보", "022": "세계일보",
+    "006": "미디어오늘", "007": "일다", "008": "머니투데이", "009": "매일경제",
+    "011": "서울경제", "014": "파이낸셜뉴스", "015": "한국경제", "016": "헤럴드경제",
+    "018": "이데일리", "020": "동아일보", "021": "문화일보", "022": "세계일보",
     "023": "조선일보", "024": "매경이코노미", "025": "중앙일보", "028": "한겨레",
-    "032": "경향신문", "081": "서울신문", "082": "부산일보", "088": "매일신문",
-    "366": "조선비즈", "469": "한국일보", "640": "코리아중앙데일리", "658": "국제신문",
+    "029": "디지털타임스", "030": "전자신문", "031": "아이뉴스24", "032": "경향신문",
+    "033": "주간경향", "036": "한겨레21", "037": "주간동아", "044": "코리아헤럴드",
+    "047": "오마이뉴스", "050": "한경비즈니스", "052": "YTN", "053": "주간조선",
+    "055": "SBS", "056": "KBS", "057": "MBN", "079": "노컷뉴스", "081": "서울신문",
+    "082": "부산일보", "087": "강원일보", "088": "매일신문", "092": "지디넷코리아",
+    "094": "월간 산", "119": "데일리안", "123": "조세일보", "127": "기자협회보",
+    "138": "디지털데일리", "145": "레이디경향", "214": "MBC", "215": "한국경제TV",
+    "243": "이코노미스트", "262": "신동아", "277": "아시아경제", "293": "블로터",
+    "296": "코메디닷컴", "308": "시사IN", "310": "여성신문", "346": "헬스조선",
+    "366": "조선비즈", "374": "SBS Biz", "417": "동행미디어 시대", "421": "뉴스1",
+    "422": "연합뉴스TV", "437": "JTBC", "448": "TV조선", "449": "채널A",
+    "469": "한국일보", "584": "동아사이언스", "586": "시사저널", "607": "뉴스타파",
+    "629": "더팩트", "640": "코리아중앙데일리", "648": "비즈워치", "654": "강원도민일보",
+    "655": "CJB청주방송", "656": "대전일보", "657": "대구MBC", "658": "국제신문",
+    "659": "전주MBC", "660": "kbc광주방송", "661": "JIBS", "662": "농민신문",
+    "665": "더스쿠프", "666": "경기일보",
 }
 
 
@@ -232,10 +248,8 @@ class NaverOpinionScraper(BaseScraper):
             items = _parse_editorial_page_html(html, date)
             seen_urls = {e.url for e in items}
 
-        # 2) Playwright 실패 또는 수집 적을 때: editorial(httpx) + list.naver 보조
-        if len(items) < 40:
-            items = []
-            seen_urls = set()
+        # 2) 수집이 30개 미만이면 editorial(httpx) + list.naver 보조로 보강 (기존 항목 유지·병합)
+        if len(items) < 30:
             try:
                 async with httpx.AsyncClient(
                     follow_redirects=True,
@@ -244,15 +258,26 @@ class NaverOpinionScraper(BaseScraper):
                 ) as client:
                     r = await client.get(url_editorial)
                     r.raise_for_status()
-                    items = _parse_editorial_page_html(r.text, date)
-                    seen_urls = {e.url for e in items}
-                    for page in range(1, self.LIST_NAVER_MAX_PAGES + 1):
-                        list_url = f"{NAVER_LIST_URL}?mode=LSD&mid=sec&sid1=110&listType=paper&date={param}&page={page}"
-                        r2 = await client.get(list_url)
-                        r2.raise_for_status()
-                        extra = _parse_list_naver_page(r2.text, date, seen_urls)
-                        items.extend(extra)
-                        if not extra:
+                    extra_from_editorial = _parse_editorial_page_html(r.text, date)
+                    for e in extra_from_editorial:
+                        if e.url not in seen_urls:
+                            seen_urls.add(e.url)
+                            items.append(e)
+                    # list.naver: listType=paper(신문게재) → 없으면 listType=title 시도
+                    for list_type in ("paper", "title"):
+                        added_any = False
+                        for page in range(1, self.LIST_NAVER_MAX_PAGES + 1):
+                            list_url = f"{NAVER_LIST_URL}?mode=LSD&mid=sec&sid1=110&listType={list_type}&date={param}&page={page}"
+                            r2 = await client.get(list_url)
+                            r2.raise_for_status()
+                            extra = _parse_list_naver_page(r2.text, date, seen_urls)
+                            for e in extra:
+                                items.append(e)
+                                seen_urls.add(e.url)
+                                added_any = True
+                            if not extra:
+                                break
+                        if list_type == "paper" and added_any:
                             break
             except Exception as e:
                 if not items:

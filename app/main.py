@@ -125,10 +125,15 @@ async def debug_ga_gtm():
     }
 
 
+# Railway 등에서 환경 변수가 주입되지 않을 때 사용할 기본 ID (본인 값으로 수정 가능)
+_DEFAULT_GA_MEASUREMENT_ID = "G-KWSQPHHL52"
+_DEFAULT_GTM_ID = "GTM-5RBVS34C"
+
+
 def _ga_gtm_context() -> dict:
-    """Google Analytics·태그 관리자용 ID (환경 변수). 템플릿에 넘길 때 사용."""
-    ga = (os.environ.get("GA_MEASUREMENT_ID") or "").strip()
-    gtm = (os.environ.get("GTM_ID") or "").strip()
+    """Google Analytics·태그 관리자용 ID. 환경 변수 우선, 없으면 기본값 사용."""
+    ga = (os.environ.get("GA_MEASUREMENT_ID") or "").strip() or _DEFAULT_GA_MEASUREMENT_ID
+    gtm = (os.environ.get("GTM_ID") or "").strip() or _DEFAULT_GTM_ID
     return {"ga_measurement_id": ga or None, "gtm_id": gtm or None}
 
 
