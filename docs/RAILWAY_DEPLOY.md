@@ -105,6 +105,44 @@ Deploy 로그에는 "Application startup complete"가 보이는데 브라우저�
 
 ---
 
+## push 했는데 Railway에 반영이 안 될 때
+
+여러 번 `git push`와 Redeploy를 해도 웹사이트에 변경이 안 보이면, **Railway가 어떤 저장소/브랜치/커밋을 쓰는지**부터 확인하세요.
+
+### 1. 실제 배포된 커밋 확인
+
+1. **배포된 앱**에서 아래 주소로 접속합니다.  
+   `https://(Railway에서 준 주소)/api/deploy-info`
+2. 응답에 나오는 **`commit_sha`** 또는 **`commit_short`** 값을 복사합니다.
+3. **로컬** 터미널에서 실행합니다.  
+   `git rev-parse HEAD`  
+   → 나온 전체 해시와 2번의 `commit_sha`가 **같은지** 비교합니다.
+4. **같으면** Railway는 최신 코드로 배포된 것이고, 반영이 안 보이는 건 **캐시/다른 페이지** 문제일 수 있습니다.  
+   **다르면** Railway가 예전 커밋으로 빌드하고 있으므로 아래 2·3을 확인합니다.
+
+### 2. Railway에서 연결된 저장소·브랜치 확인
+
+1. **Railway** → 해당 프로젝트 → **서비스(카드)** 클릭 → **Settings** 탭
+2. **Source** 섹션 확인:
+   - **Repository**: `nvmymind/newspaper` (또는 사용 중인 저장소)가 **맞는지**
+   - **Branch**: **main** 인지 (로컬에서 push하는 브랜치와 동일해야 함)
+3. 다른 저장소나 **master** 등 다른 브랜치로 되어 있으면, **main**으로 바꾸고 저장 후 **Redeploy** 한 번 합니다.
+
+### 3. Deployments에서 빌드된 커밋 확인
+
+1. **Deployments** 탭 → **맨 위(최신)** 배포 클릭
+2. 배포 상세에서 **커밋 메시지** 또는 **Commit** 해시가 표시되면, 그게 **지금 서비스에 돌아가는 커밋**입니다.
+3. 그 해시가 로컬 `git log -1` 과 **다르면**:
+   - **Trigger redeploy** 또는 **Redeploy** 로 다시 빌드하거나,
+   - **Settings → Source** 에서 브랜치를 **main**으로 맞춘 뒤 **Redeploy** 합니다.
+
+### 4. 그래도 같다면
+
+- **Clear build cache** 후 재배포: Settings에 **Clear build cache** 옵션이 있으면 사용한 뒤 Redeploy
+- 브라우저 **시크릿 창** 또는 **Ctrl+Shift+R** 강력 새로고침으로 접속해 보기
+
+---
+
 ## 자주 하는 질문
 
 **Q. 비용은 얼마나 나오나요?**  

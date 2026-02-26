@@ -108,6 +108,19 @@ async def health():
     return {"status": "ok"}
 
 
+@app.get("/api/deploy-info")
+async def deploy_info():
+    """Railway가 실제로 배포한 커밋 확인용. push 반영 여부 점검 시 사용."""
+    commit_sha = (os.environ.get("RAILWAY_GIT_COMMIT_SHA") or "").strip()
+    branch = (os.environ.get("RAILWAY_GIT_BRANCH") or "").strip()
+    return {
+        "commit_sha": commit_sha or None,
+        "commit_short": commit_sha[:7] if len(commit_sha) >= 7 else commit_sha,
+        "branch": branch or None,
+        "hint": "로컬과 비교: git rev-parse HEAD",
+    }
+
+
 @app.get("/api/site-verification-status")
 async def site_verification_status():
     """Search Console용 meta 태그가 head에 넣어질 값이 있는지 확인. set: true면 정상."""
