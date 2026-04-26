@@ -43,6 +43,7 @@ NAVER_OID_NAMES = {
     "659": "전주MBC", "660": "kbc광주방송", "661": "JIBS", "662": "농민신문",
     "665": "더스쿠프", "666": "경기일보",
 }
+SOURCE_NAMES_BY_LENGTH = sorted(set(NAVER_OID_NAMES.values()), key=len, reverse=True)
 
 
 def _date_to_naver_param(date: str) -> str:
@@ -51,11 +52,32 @@ def _date_to_naver_param(date: str) -> str:
     return date[:4] + date[5:7] + date[8:10]
 
 
-def _parse_link_text(text: str) -> Tuple[str, str]:
-    """'신문사명 제목 N시간전' → (신문사명, 제목). 제목이 비면 링크 텍스트 일부를 제목으로."""
+def _strip_leading_source(text: str, source: str) -> str:
+    """링크 텍스트 앞쪽의 신문사명을 제거해 제목만 남김."""
+    s = (text or "").strip()
+    if not s or not source:
+        return s
+    if s.startswith(source):
+        s = s[len(source):].lstrip(" :|-·\t\r\n")
+    return s.strip()
+
+
+def _parse_link_text(text: str, source_hint: str = "") -> Tuple[str, str]:
+    """'신문사명 제목 N시간전' → (신문사명, 제목). 공백이 없는 케이스도 보정."""
     text = TIME_SUFFIX_RE.sub("", (text or "").strip()).strip()
     if not text:
         return "", ""
+
+    source = (source_hint or "").strip()
+    if source:
+        title = _strip_leading_source(text, source)
+        return source, title or text
+
+    for name in SOURCE_NAMES_BY_LENGTH:
+        if text.startswith(name):
+            title = _strip_leading_source(text, name)
+            return name, title or text
+
     parts = text.split(None, 1)
     if len(parts) == 1:
         return parts[0], parts[0][:120] if len(parts[0]) > 120 else parts[0]
@@ -101,7 +123,9 @@ def _parse_editorial_page_html(html: str, date: str) -> List[Editorial]:
             continue
         seen.add(href)
         text = a.get_text(strip=True)
-        source, title = _parse_link_text(text)
+        oid = _oid_from_url(href)
+        source_hint = NAVER_OID_NAMES.get(oid, "")
+        source, title = _parse_link_text(text, source_hint=source_hint)
         title = _ensure_title(text, title)
         if not source:
             source = "알 수 없음"

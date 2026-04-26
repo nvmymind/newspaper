@@ -35,7 +35,7 @@ pip install -r requirements.txt
 
 ```bash
 
-```
+```uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
 브라우저에서 **http://127.0.0.1:8000** 으로 접속합니다.
 
@@ -44,7 +44,7 @@ pip install -r requirements.txt
 - 그래도 안 되면 서버를 끈 뒤 **8001** 또는 **8002**로 실행해 보세요. (`uvicorn ... --port 8001`)
 
 ```bash
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+
 ```
 ### 4. (선택) 유튜브 구독 영상
 
@@ -106,7 +106,7 @@ git push
 ## 스크래퍼 추가 방법
 
 1. `app/scrapers/` 아래에 새 파일 추가 (예: `khan.py`)
-2. `BaseScraper` 상속, `source_name`, `list_url` 설정 후 `fetch_editorials()` 구현
+2. `BaseScraper` 상속, `source_name`, `list_url` 설uvicorn app.main:app --reload --host 127.0.0.1 --port 8000정 후 `fetch_editorials()` 구현
 3. `app/scrapers/__init__.py` 의 `SCRAPERS` 리스트에 해당 클래스 추가
 
 각 신문사 사이트 구조가 바뀌면 해당 스크래퍼의 선택자만 수정하면 됩니다.
