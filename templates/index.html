@@ -266,86 +266,152 @@
     .footer-meta a:hover { text-decoration: underline; }
     .econ-banner {
       position: fixed;
-      right: 1.25rem;
+      right: 1.5rem;
       top: 50%;
       transform: translateY(-50%);
       z-index: 50;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 0.85rem;
-      width: min(17rem, calc(100vw - 2rem));
-      padding: 1rem 1.1rem;
-      background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 55%, #0ea5e9 100%);
+      text-align: center;
+      gap: 0;
+      width: 11.5rem;
+      min-height: 16.5rem;
+      padding: 1.35rem 1.15rem 1.25rem;
+      background:
+        linear-gradient(160deg, rgba(255,255,255,0.14) 0%, transparent 42%),
+        linear-gradient(145deg, #0f2744 0%, #1e40af 48%, #2563eb 72%, #0284c7 100%);
       color: #fff;
       text-decoration: none;
-      border-radius: 14px;
-      box-shadow: 0 8px 28px rgba(37, 99, 235, 0.35);
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      transition: transform 0.2s, box-shadow 0.2s;
+      border-radius: 18px;
+      box-shadow:
+        0 4px 6px rgba(15, 39, 68, 0.08),
+        0 16px 40px rgba(37, 99, 235, 0.32),
+        inset 0 1px 0 rgba(255, 255, 255, 0.22);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      overflow: hidden;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    .econ-banner::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 20% 0%, rgba(255,255,255,0.12) 0%, transparent 55%);
+      pointer-events: none;
+    }
+    .econ-banner::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #38bdf8, #a5f3fc, #38bdf8);
+      opacity: 0.85;
     }
     .econ-banner:hover {
-      transform: translateY(-50%) translateX(-4px);
-      box-shadow: 0 12px 36px rgba(37, 99, 235, 0.45);
+      transform: translateY(-50%) translateX(-6px) scale(1.02);
+      box-shadow:
+        0 8px 12px rgba(15, 39, 68, 0.1),
+        0 24px 48px rgba(37, 99, 235, 0.42),
+        inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    }
+    .econ-banner-badge {
+      position: relative;
+      z-index: 1;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.72);
+      margin-bottom: 0.85rem;
     }
     .econ-banner-icon {
+      position: relative;
+      z-index: 1;
       flex-shrink: 0;
-      width: 2.5rem;
-      height: 2.5rem;
+      width: 3.6rem;
+      height: 3.6rem;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.35rem;
-      background: rgba(255, 255, 255, 0.16);
-      border-radius: 10px;
+      font-size: 1.85rem;
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 14px;
+      margin-bottom: 1rem;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
     }
     .econ-banner-text {
-      flex: 1;
-      min-width: 0;
+      position: relative;
+      z-index: 1;
       display: flex;
       flex-direction: column;
-      gap: 0.15rem;
-      line-height: 1.35;
+      gap: 0.55rem;
+      line-height: 1.4;
+      margin-bottom: 1.1rem;
     }
     .econ-banner-text strong {
-      font-size: 0.92rem;
+      font-family: "Noto Serif KR", serif;
+      font-size: 1.05rem;
       font-weight: 700;
-      letter-spacing: -0.01em;
+      letter-spacing: -0.02em;
+      line-height: 1.45;
     }
     .econ-banner-text small {
-      font-size: 0.75rem;
-      opacity: 0.88;
-      font-weight: 400;
-    }
-    .econ-banner-arrow {
-      flex-shrink: 0;
-      font-size: 1.1rem;
+      font-size: 0.78rem;
       opacity: 0.9;
-      transition: transform 0.2s;
+      font-weight: 400;
+      line-height: 1.55;
+      color: rgba(255, 255, 255, 0.88);
     }
-    .econ-banner:hover .econ-banner-arrow {
-      transform: translateX(3px);
+    .econ-banner-cta {
+      position: relative;
+      z-index: 1;
+      margin-top: auto;
+      width: 100%;
+      padding: 0.55rem 0.75rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      background: rgba(255, 255, 255, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      border-radius: 10px;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .econ-banner:hover .econ-banner-cta {
+      background: rgba(255, 255, 255, 0.24);
+      transform: translateY(-1px);
     }
     @media (max-width: 1100px) {
       .econ-banner {
         top: auto;
-        bottom: 1.25rem;
-        right: 1rem;
-        left: 1rem;
-        width: auto;
-        max-width: 22rem;
-        margin-left: auto;
+        bottom: 1.5rem;
+        right: 1.25rem;
+        left: auto;
+        width: 10.5rem;
+        min-height: 15rem;
         transform: none;
       }
       .econ-banner:hover {
-        transform: translateY(-2px);
+        transform: translateY(-4px) scale(1.02);
       }
     }
     @media (max-width: 480px) {
       .econ-banner {
-        left: 0.75rem;
-        right: 0.75rem;
-        bottom: 0.75rem;
-        max-width: none;
+        right: 0.85rem;
+        bottom: 0.85rem;
+        width: 9.75rem;
+        min-height: 14rem;
+        padding: 1.15rem 1rem 1.1rem;
+      }
+      .econ-banner-icon {
+        width: 3.1rem;
+        height: 3.1rem;
+        font-size: 1.55rem;
+      }
+      .econ-banner-text strong {
+        font-size: 0.95rem;
       }
     }
   </style>
@@ -393,12 +459,13 @@
     rel="noopener noreferrer"
     aria-label="경제 영상 분석 리포트 사이트로 이동"
   >
+    <span class="econ-banner-badge">Econ Report</span>
     <span class="econ-banner-icon" aria-hidden="true">📊</span>
     <span class="econ-banner-text">
-      <strong>경제 영상 분석 리포트</strong>
-      <small>유튜브 경제 채널 · Gemini AI 분석</small>
+      <strong>경제 영상<br />분석 리포트</strong>
+      <small>유튜브 경제 채널<br />Gemini AI 자동 분석</small>
     </span>
-    <span class="econ-banner-arrow" aria-hidden="true">→</span>
+    <span class="econ-banner-cta">바로 보기 →</span>
   </a>
 
   <script>
