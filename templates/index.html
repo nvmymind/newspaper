@@ -264,12 +264,25 @@
     .footer-meta .app-name { font-weight: 600; color: var(--text); }
     .footer-meta a { color: var(--accent); text-decoration: none; }
     .footer-meta a:hover { text-decoration: underline; }
-    .econ-banner {
+    .side-banners {
       position: fixed;
       right: 1.5rem;
-      top: 50%;
-      transform: translateY(-50%);
+      top: 1rem;
+      bottom: 1rem;
       z-index: 50;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 1.1rem;
+      max-height: calc(100vh - 2rem);
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 0.25rem 0;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(37, 99, 235, 0.35) transparent;
+    }
+    .side-banner {
+      position: relative;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -278,9 +291,6 @@
       width: 17.25rem;
       min-height: 24.75rem;
       padding: 2.03rem 1.73rem 1.88rem;
-      background:
-        linear-gradient(160deg, rgba(255,255,255,0.14) 0%, transparent 42%),
-        linear-gradient(145deg, #0f2744 0%, #1e40af 48%, #2563eb 72%, #0284c7 100%);
       color: #fff;
       text-decoration: none;
       border-radius: 27px;
@@ -292,31 +302,62 @@
       overflow: hidden;
       transition: transform 0.25s ease, box-shadow 0.25s ease;
     }
-    .econ-banner::before {
+    .side-banner::before {
       content: "";
       position: absolute;
       inset: 0;
       background: radial-gradient(circle at 20% 0%, rgba(255,255,255,0.12) 0%, transparent 55%);
       pointer-events: none;
     }
-    .econ-banner::after {
+    .side-banner::after {
       content: "";
       position: absolute;
       bottom: 0;
       left: 0;
       right: 0;
       height: 4.5px;
-      background: linear-gradient(90deg, #38bdf8, #a5f3fc, #38bdf8);
       opacity: 0.85;
     }
-    .econ-banner:hover {
-      transform: translateY(-50%) translateX(-6px) scale(1.02);
+    .side-banner:hover {
+      transform: translateX(-6px) scale(1.02);
+    }
+    .side-banner--econ {
+      background:
+        linear-gradient(160deg, rgba(255,255,255,0.14) 0%, transparent 42%),
+        linear-gradient(145deg, #0f2744 0%, #1e40af 48%, #2563eb 72%, #0284c7 100%);
+      box-shadow:
+        0 4px 6px rgba(15, 39, 68, 0.08),
+        0 16px 40px rgba(37, 99, 235, 0.32),
+        inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    }
+    .side-banner--econ::after {
+      background: linear-gradient(90deg, #38bdf8, #a5f3fc, #38bdf8);
+    }
+    .side-banner--econ:hover {
       box-shadow:
         0 8px 12px rgba(15, 39, 68, 0.1),
         0 24px 48px rgba(37, 99, 235, 0.42),
         inset 0 1px 0 rgba(255, 255, 255, 0.28);
     }
-    .econ-banner-badge {
+    .side-banner--wordcard {
+      background:
+        linear-gradient(160deg, rgba(255,255,255,0.14) 0%, transparent 42%),
+        linear-gradient(145deg, #134e4a 0%, #0f766e 48%, #059669 72%, #10b981 100%);
+      box-shadow:
+        0 4px 6px rgba(15, 39, 68, 0.08),
+        0 16px 40px rgba(5, 150, 105, 0.32),
+        inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    }
+    .side-banner--wordcard::after {
+      background: linear-gradient(90deg, #6ee7b7, #a7f3d0, #6ee7b7);
+    }
+    .side-banner--wordcard:hover {
+      box-shadow:
+        0 8px 12px rgba(15, 39, 68, 0.1),
+        0 24px 48px rgba(5, 150, 105, 0.42),
+        inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    }
+    .side-banner-badge {
       position: relative;
       z-index: 1;
       font-size: 0.93rem;
@@ -326,7 +367,7 @@
       color: rgba(255, 255, 255, 0.72);
       margin-bottom: 1.28rem;
     }
-    .econ-banner-icon {
+    .side-banner-icon {
       position: relative;
       z-index: 1;
       flex-shrink: 0;
@@ -342,7 +383,7 @@
       margin-bottom: 1.5rem;
       box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
     }
-    .econ-banner-text {
+    .side-banner-text {
       position: relative;
       z-index: 1;
       display: flex;
@@ -351,21 +392,21 @@
       line-height: 1.4;
       margin-bottom: 1.65rem;
     }
-    .econ-banner-text strong {
+    .side-banner-text strong {
       font-family: "Noto Serif KR", serif;
       font-size: 1.58rem;
       font-weight: 700;
       letter-spacing: -0.02em;
       line-height: 1.45;
     }
-    .econ-banner-text small {
+    .side-banner-text small {
       font-size: 1.17rem;
       opacity: 0.9;
       font-weight: 400;
       line-height: 1.55;
       color: rgba(255, 255, 255, 0.88);
     }
-    .econ-banner-cta {
+    .side-banner-cta {
       position: relative;
       z-index: 1;
       margin-top: auto;
@@ -379,38 +420,42 @@
       border-radius: 15px;
       transition: background 0.2s, transform 0.2s;
     }
-    .econ-banner:hover .econ-banner-cta {
+    .side-banner:hover .side-banner-cta {
       background: rgba(255, 255, 255, 0.24);
       transform: translateY(-1px);
     }
     @media (max-width: 1100px) {
-      .econ-banner {
+      .side-banners {
         top: auto;
         bottom: 1.5rem;
         right: 1.25rem;
-        left: auto;
+        max-height: min(46rem, calc(100vh - 2rem));
+      }
+      .side-banner {
         width: 15.75rem;
         min-height: 22.5rem;
-        transform: none;
       }
-      .econ-banner:hover {
+      .side-banner:hover {
         transform: translateY(-4px) scale(1.02);
       }
     }
     @media (max-width: 480px) {
-      .econ-banner {
+      .side-banners {
         right: 0.85rem;
         bottom: 0.85rem;
+        gap: 0.75rem;
+      }
+      .side-banner {
         width: 14.63rem;
         min-height: 21rem;
         padding: 1.73rem 1.5rem 1.65rem;
       }
-      .econ-banner-icon {
+      .side-banner-icon {
         width: 4.65rem;
         height: 4.65rem;
         font-size: 2.33rem;
       }
-      .econ-banner-text strong {
+      .side-banner-text strong {
         font-size: 1.43rem;
       }
     }
@@ -452,21 +497,38 @@
     </footer>
   </div>
 
-  <a
-    href="https://myyoutube-econ-production.up.railway.app/"
-    class="econ-banner"
-    target="_blank"
-    rel="noopener noreferrer"
-    aria-label="경제 영상 분석 리포트 사이트로 이동"
-  >
-    <span class="econ-banner-badge">Econ Report</span>
-    <span class="econ-banner-icon" aria-hidden="true">📊</span>
-    <span class="econ-banner-text">
-      <strong>경제 영상<br />분석 리포트</strong>
-      <small>유튜브 경제 채널<br />Gemini AI 자동 분석</small>
-    </span>
-    <span class="econ-banner-cta">바로 보기 →</span>
-  </a>
+  <div class="side-banners">
+    <a
+      href="https://myyoutube-econ-production.up.railway.app/"
+      class="side-banner side-banner--econ"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="경제 영상 분석 리포트 사이트로 이동"
+    >
+      <span class="side-banner-badge">Econ Report</span>
+      <span class="side-banner-icon" aria-hidden="true">📊</span>
+      <span class="side-banner-text">
+        <strong>경제 영상<br />분석 리포트</strong>
+        <small>유튜브 경제 채널<br />Gemini AI 자동 분석</small>
+      </span>
+      <span class="side-banner-cta">바로 보기 →</span>
+    </a>
+    <a
+      href="https://wordcard-production-8a31.up.railway.app/"
+      class="side-banner side-banner--wordcard"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="일본어 단어장 Wordcard 사이트로 이동"
+    >
+      <span class="side-banner-badge">Word Card</span>
+      <span class="side-banner-icon" aria-hidden="true">📚</span>
+      <span class="side-banner-text">
+        <strong>일본어<br />단어 학습</strong>
+        <small>Wordcard 단어장<br />카드로 암기·복습</small>
+      </span>
+      <span class="side-banner-cta">바로 보기 →</span>
+    </a>
+  </div>
 
   <script>
     const dateEl = document.getElementById("date");
